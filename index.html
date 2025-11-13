@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Admin Panel - Single Page Management</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* --- General Variables and Reset --- */
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --danger-color: #dc3545;
+            --danger-hover: #c82333;
+            --success-color: #28a745;
+            --success-hover: #1e7e34;
+            --secondary-color: #6c757d;
+            --light-bg: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --input-border: #ced4da;
+        }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: var(--light-bg); 
+            color: var(--text-color);
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px; /* Wider for management view */
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        h2 { 
+            color: var(--primary-color); 
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* --- Tab Navigation --- */
+        .tab-nav {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--secondary-color);
+            transition: color 0.3s, border-bottom 0.3s;
+            flex-grow: 1;
+            text-align: center;
+        }
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* --- Tab Content Styling --- */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* --- Form Styling (Add Channel) --- */
+        #add-channel-section label { 
+            display: block; 
+            margin-top: 15px; 
+            font-weight: 500; 
+            color: var(--secondary-color);
+            font-size: 0.9em;
+        }
+        #add-channel-section input, #add-channel-section select { 
+            padding: 12px; 
+            margin: 5px 0 10px 0; 
+            width: 100%; 
+            box-sizing: border-box; 
+            border: 1px solid var(--input-border); 
+            border-radius: 6px; 
+        }
+        #addBtn { background-color: var(--success-color); }
+        #addBtn:hover { background-color: var(--success-hover); }
+        .form-container { max-width: 500px; margin: 0 auto; }
+        
+        /* --- Channel List Styling (Management) --- */
+        #channelsList {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 0;
+        }
+        .channel { 
+            padding: 15px; 
+            border: 1px solid #e9ecef; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            background-color: var(--card-bg); 
+            transition: box-shadow 0.3s ease, transform 0.2s ease;
+        }
+        .channel:hover {
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        .channel-info { flex-grow: 1; min-width: 0; }
+        .channel-info b { display: block; font-size: 1.1em; color: var(--text-color); font-weight: 600; }
+        .channel-info small { color: var(--secondary-color); word-break: break-all; font-size: 0.85em; display: block; margin-top: 2px;}
+        .channel-info .category-tag { 
+            display: inline-block; 
+            background-color: #e9f0ff; 
+            color: var(--primary-color); 
+            padding: 2px 8px; 
+            border-radius: 12px; 
+            font-size: 0.75em; 
+            font-weight: 600; 
+            margin-top: 5px;
+        }
+        .channel-logo { 
+            width: 50px; 
+            height: 50px; 
+            object-fit: contain; 
+            border-radius: 8px; 
+            flex-shrink: 0; 
+            border: 1px solid #eee;
+        }
+        .channel-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .action-btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+            transition: color 0.3s ease, transform 0.1s;
+            font-size: 1em;
+        }
+        .edit-btn { color: var(--primary-color); }
+        .delete-btn { color: var(--danger-color); }
+
+        /* --- Status Message --- */
+        #status { 
+            padding: 12px; 
+            margin-top: 15px; 
+            border-radius: 6px; 
+            text-align: center; 
+            font-weight: 600;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        #status.show { opacity: 1; }
+        #status.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        #status.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* --- Edit Form Modal (from manage_channels.html) --- */
+        #editPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #editPanel.active { display: flex; }
+        .edit-form-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .edit-form-content input, .edit-form-content select, .edit-form-content button {
+            padding: 10px; margin-bottom: 15px; width: 100%; border: 1px solid var(--input-border); border-radius: 4px; box-sizing: border-box;
+        }
+        .edit-form-content label { margin-top: 5px; display: block; font-weight: 600; }
+        #updateBtn { background-color: var(--primary-color); margin-top: 20px; color: white; }
+        #updateBtn:hover { background-color: var(--primary-hover); }
+
+        /* --- Media Queries --- */
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .channel { flex-wrap: wrap; padding: 10px; }
+            .channel-info { order: 1; flex-basis: 100%; }
+            .channel-logo { order: 0; }
+            .channel-actions { order: 2; margin-left: auto; }
+            .tab-btn { font-size: 1em; padding: 10px 15px; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><i class="fas fa-satellite-dish"></i> Live Channel Admin Panel</h2>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" id="addTabBtn"><i class="fas fa-plus-circle"></i> Add Channel</button>
+            <button class="tab-btn" id="manageTabBtn"><i class="fas fa-tasks"></i> Manage Channels</button>
+        </div>
+        
+        <p id="status"></p>
+
+        <div class="tab-content active" id="add-channel-section">
+            <div class="form-container">
+                <label for="channelName"><i class="fas fa-tag"></i> Channel Name</label>
+                <input id="channelName" placeholder="e.g., Independent TV" />
+
+                <label for="channelLogoUrl"><i class="fas fa-image"></i> Logo Image URL</label>
+                <input id="channelLogoUrl" placeholder="e.g., https://example.com/logo.png" />
+
+                <label for="channelUrl"><i class="fas fa-link"></i> Channel Stream URL (.m3u8)</label>
+                <input id="channelUrl" placeholder="e.g., https://cdnm.example.com/....m3u8" />
+
+                <label for="channelCategory"><i class="fas fa-list"></i> Channel Category</label>
+                <select id="channelCategory">
+                    <option value="Home">Home</option>
+                    <option value="News">News</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Movies">Movies</option>
+                </select>
+
+                <button id="addBtn"><i class="fas fa-plus"></i> Add Channel</button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="manage-channel-section">
+            <div id="channelsList">
+                <p style='text-align:center; color:var(--secondary-color); margin-top:20px;'><i class='fas fa-spinner fa-spin'></i> Loading channels...</p>
+            </div>
+        </div>
+
+        <div id="editPanel">
+            <div class="edit-form-content">
+                <h3><i class="fas fa-edit"></i> Edit Channel</h3>
+                <form id="editForm">
+                    <input type="hidden" id="editChannelKey">
+
+                    <label for="editChannelName">Channel Name</label>
+                    <input id="editChannelName" required>
+
+                    <label for="editChannelLogoUrl">Logo Image URL</label>
+                    <input id="editChannelLogoUrl" required>
+
+                    <label for="editChannelUrl">Stream URL (.m3u8)</label>
+                    <input id="editChannelUrl" required>
+
+                    <label for="editChannelCategory">Category</label>
+                    <select id="editChannelCategory" required>
+                        <option value="Home">Home</option>
+                        <option value="News">News</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Movies">Movies</option>
+                    </select>
+                    
+                    <button type="submit" id="updateBtn"><i class="fas fa-save"></i> Save Changes</button>
+                    <button type="button" id="cancelEditBtn" style="background-color: var(--secondary-color); margin-top: 10px; border: none; color: white;"><i class="fas fa-times"></i> Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        // --- 1. FIREBASE CONFIGURATION ---
+        // Your Firebase Config (Same in both original files)
+        const firebaseConfig = {
+          apiKey: "AIzaSyAvcVuf7Cv-bSDZA5UHvSej69AhjJWc93s",
+          authDomain: "fire-fox-83e12.firebaseapp.com",
+          databaseURL: "https://fire-fox-83e12-default-rtdb.firebaseio.com",
+          projectId: "fire-fox-83e12",
+          storageBucket: "fire-fox-83e12.appspot.com",
+          messagingSenderId: "262028687961",
+          appId: "1:262028687961:web:28325733cd68a920dc4f48",
+          measurementId: "G-TH104SJ3HB"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const channelsRef = ref(db, "channels");
+
+        // --- 2. DOM ELEMENTS ---
+        // Status & Utility
+        const statusEl = document.getElementById("status");
+        
+        // Add Channel Elements
+        const nameEl = document.getElementById("channelName");
+        const logoUrlEl = document.getElementById("channelLogoUrl");
+        const urlEl = document.getElementById("channelUrl");
+        const categoryEl = document.getElementById("channelCategory");
+        const addBtn = document.getElementById("addBtn");
+
+        // Manage Channel Elements
+        const listEl = document.getElementById("channelsList");
+        const editPanel = document.getElementById("editPanel");
+        const editForm = document.getElementById("editForm");
+        const editKeyEl = document.getElementById("editChannelKey");
+        const editNameEl = document.getElementById("editChannelName");
+        const editLogoUrlEl = document.getElementById("editChannelLogoUrl");
+        const editUrlEl = document.getElementById("editChannelUrl");
+        const editCategoryEl = document.getElementById("editChannelCategory");
+
+        // Tab Elements
+        const addTabBtn = document.getElementById("addTabBtn");
+        const manageTabBtn = document.getElementById("manageTabBtn");
+        const addSection = document.getElementById("add-channel-section");
+        const manageSection = document.getElementById("manage-channel-section");
+
+        // --- 3. UTILITY FUNCTIONS ---
+        function showMsg(msg, ok = true) {
+            statusEl.textContent = msg;
+            statusEl.className = `show ${ok ? 'success' : 'error'}`;
+            setTimeout(() => (statusEl.className = ""), 4000);
+        }
+
+        // --- 4. TAB SWITCHING LOGIC ---
+        function switchTab(tabName) {
+            // Hide all content and remove active class from all buttons
+            addSection.classList.remove('active');
+            manageSection.classList.remove('active');
+            addTabBtn.classList.remove('active');
+            manageTabBtn.classList.remove('active');
+
+            // Show relevant content and add active class to button
+            if (tabName === 'add') {
+                addSection.classList.add('active');
+                addTabBtn.classList.add('active');
+            } else if (tabName === 'manage') {
+                manageSection.classList.add('active');
+                manageTabBtn.classList.add('active');
+            }
+            statusEl.className = ""; // Clear status message on tab switch
+        }
+
+        addTabBtn.onclick = () => switchTab('add');
+        manageTabBtn.onclick = () => switchTab('manage');
+
+        // --- 5. ADD CHANNEL LOGIC (From index.html) ---
+        addBtn.onclick = async () => {
+            const name = nameEl.value.trim();
+            const logoUrl = logoUrlEl.value.trim();
+            const url = urlEl.value.trim();
+            const category = categoryEl.value;
+            
+            if (!name || !url || !logoUrl) return showMsg("Please enter Name, Logo URL, and Stream URL.", false);
+
+            try {
+                const newRef = push(channelsRef);
+                await set(newRef, { name, logoUrl, url, category, createdAt: Date.now() });
+                
+                nameEl.value = "";
+                logoUrlEl.value = "";
+                urlEl.value = "";
+                categoryEl.value = "Home"; // Reset category to default
+
+                showMsg("✅ Channel Added Successfully! Switching to management view...", true);
+                
+                // Automatically switch to the manage tab after a successful add
+                setTimeout(() => switchTab('manage'), 1500); 
+
+            } catch (error) {
+                showMsg("Error adding channel: " + error.message, false);
+            }
+        };
+
+        // --- 6. MANAGE CHANNEL LOGIC (From manage_channels.html) ---
+
+        // Function to load channel data into the modal form for editing
+        function editChannel(key, ch) {
+            editKeyEl.value = key;
+            editNameEl.value = ch.name;
+            editLogoUrlEl.value = ch.logoUrl || ''; 
+            editUrlEl.value = ch.url;
+            editCategoryEl.value = ch.category;
+            editPanel.classList.add('active'); // Show the edit modal
+        }
+
+        // Cancel Edit
+        document.getElementById("cancelEditBtn").onclick = () => {
+            editPanel.classList.remove('active');
+        };
+
+        // Update Channel Logic (Form Submission)
+        editForm.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const key = editKeyEl.value;
+            const name = editNameEl.value.trim();
+            const logoUrl = editLogoUrlEl.value.trim();
+            const url = editUrlEl.value.trim();
+            const category = editCategoryEl.value;
+
+            if (!key || !name || !url || !logoUrl) return showMsg("All fields are required for update.", false);
+
+            try {
+                const channelData = { name, logoUrl, url, category };
+                await update(ref(db, "channels/" + key), channelData);
+
+                editPanel.classList.remove('active'); // Hide modal
+                showMsg("✨ Channel Updated Successfully!");
+            } catch (error) {
+                 showMsg("Error updating channel: " + error.message, false);
+            }
+        };
+
+        // Fetch and Display Channel List (Real-time update)
+        onValue(channelsRef, (snap) => {
+          const data = snap.val();
+          listEl.innerHTML = "";
+          if (!data) return (listEl.innerHTML = "<p style='text-align:center; color:var(--secondary-color); margin-top:20px;'><i class='fas fa-info-circle'></i> No channels available.</p>");
+
+          Object.entries(data)
+            .sort((a, b) => b[1].createdAt - a[1].createdAt) // Sort by most recent
+            .forEach(([key, ch]) => {
+              const div = document.createElement("div");
+              div.className = "channel";
+              div.innerHTML = `
+                ${ch.logoUrl ? `<img src="${ch.logoUrl}" alt="${ch.name} Logo" class="channel-logo">` : '<i class="fas fa-tv channel-logo" style="font-size:30px; color:#ccc; display:flex; align-items:center; justify-content:center;"></i>'}
+                <div class="channel-info">
+                  <b>${ch.name}</b>
+                  <span class="category-tag"><i class="fas fa-bookmark"></i> ${ch.category || 'N/A'}</span>
+                  <small title="${ch.url}">${ch.url}</small>
+                </div>
+                <div class="channel-actions">
+                    <button class="action-btn edit-btn" data-key="${key}" title="Edit Channel"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn delete-btn" data-key="${key}" title="Delete Channel"><i class="fas fa-trash-alt"></i></button>
+                </div>
+              `;
+              
+              // Delete Functionality
+              div.querySelector(".delete-btn").onclick = async () => {
+                if (confirm(`Are you sure you want to delete the channel: ${ch.name}?`)) {
+                    try {
+                        await remove(ref(db, "channels/" + key));
+                        showMsg("❌ Channel Deleted.");
+                    } catch (error) {
+                        showMsg("Error deleting channel: " + error.message, false);
+                    }
+                }
+              };
+
+              // Edit Functionality
+              div.querySelector(".edit-btn").onclick = () => editChannel(key, ch);
+
+              listEl.appendChild(div);
+            });
+        });
+
+    </script>
+</body>
+</html>
